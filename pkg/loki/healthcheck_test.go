@@ -2,6 +2,7 @@ package loki
 
 import (
 	"context"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -127,6 +128,36 @@ func Test_healthcheck(t *testing.T) {
 		res, err := s.CheckHealth(context.Background(), req)
 		assert.NoError(t, err)
 		assert.Equal(t, backend.HealthStatusError, res.Status)
+	})
+}
+
+func TestGetHealthCheckMessage(t *testing.T) {
+	logger := backend.NewLoggerWith("logger", "loki test")
+
+	t.Run("successful health check", func(t *testing.T) {
+		result := getHealthCheckMessage(nil, logger)
+
+		assert.Equal(t, backend.HealthStatusOk, result.Status)
+		assert.Equal(
+			t,
+			"Data source successfully connected.",
+			result.Message,
+		)
+	})
+
+	t.Run("failed health check includes underlying error", func(t *testing.T) {
+		err := errors.New(
+			"error from loki: TLS client certificate has expired",
+		)
+
+		result := getHealthCheckMessage(err, logger)
+
+		assert.Equal(t, backend.HealthStatusError, result.Status)
+		assert.Equal(
+			t,
+			"Unable to connect with Loki: error from loki: TLS client certificate has expired",
+			result.Message,
+		)
 	})
 }
 
