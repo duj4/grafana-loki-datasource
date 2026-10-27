@@ -155,9 +155,18 @@ func TestGetHealthCheckMessage(t *testing.T) {
 		assert.Equal(t, backend.HealthStatusError, result.Status)
 		assert.Equal(
 			t,
-			"Unable to connect with Loki: error from loki: TLS client certificate has expired",
+			"error from loki: TLS client certificate has expired",
 			result.Message,
 		)
+	})
+
+	t.Run("preserves other health check errors", func(t *testing.T) {
+		err := errors.New("invalid dataframe length, expected 1 got 0")
+
+		result := getHealthCheckMessage(err, logger)
+
+		assert.Equal(t, backend.HealthStatusError, result.Status)
+		assert.Equal(t, err.Error(), result.Message)
 	})
 }
 
